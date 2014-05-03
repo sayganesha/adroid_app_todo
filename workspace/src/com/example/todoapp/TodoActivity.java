@@ -21,10 +21,16 @@ import android.widget.ListView;
 
 public class TodoActivity extends ActionBarActivity {
 
+	// in-mem list of todo items
 	private ArrayList<String> todoItems;
+	// adapter for in-mem list
 	private ArrayAdapter<String> todoAdapter;
-	private final int REQUEST_CODE = 20;
 
+	// constants
+	private final int REQUEST_CODE = 20;
+	private final String fileName = "todo.txt";
+
+	// handles to views
 	private ListView lvTodoItems;
 	private EditText etNewItem;
 
@@ -33,18 +39,27 @@ public class TodoActivity extends ActionBarActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_todo);
 
-
+		// populate the in-mem list of todo items
 		readItems();
+
+		// setup handles
 		lvTodoItems = (ListView) findViewById(R.id.lvTodo);
 		etNewItem = (EditText) findViewById(R.id.editAddItem);
+
+		// set relation between adapter and its source of data
 		todoAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, todoItems);
 		lvTodoItems.setAdapter(todoAdapter);
 
+		// setup change listeners
 		setupListViewListener();
 	}
 
+	/**
+	 * Setups action handlers for editing and removing todo item
+	 */
 	private void setupListViewListener() {
-		// TODO Auto-generated method stub
+
+		// handler for item deletion
 		lvTodoItems.setOnItemLongClickListener(new OnItemLongClickListener() {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> aview, View item, int pos, long id)
@@ -56,18 +71,21 @@ public class TodoActivity extends ActionBarActivity {
 			}
 		});
 
+		// handler for item modification
 		lvTodoItems.setOnItemClickListener(new OnItemClickListener() {
-
 			@Override
-			public void onItemClick(AdapterView<?> arg0, View item, int pos,
-					long id) {
-
+			public void onItemClick(AdapterView<?> arg0, View item, int pos, long id) {
 				launchEditActivity(pos, todoItems.get(pos));
 			}
 		});
 
 	}
 
+	/**
+	 * Launches a new sub activity to edit a todo item
+	 * @param pos
+	 * @param text
+	 */
 	public void launchEditActivity(int pos, String text) {
 		Intent i = new Intent(this, EditItemActivity.class);
 		i.putExtra("pos", pos);
@@ -80,21 +98,38 @@ public class TodoActivity extends ActionBarActivity {
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		// REQUEST_CODE is defined above
 		if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
-			// Extract name value from result extras
+			
+			// Get back the new text and its position
 			String edit_text = data.getExtras().getString("edit_text");
 			int pos = data.getExtras().getInt("pos");
 
 			// update the view
 			todoItems.set(pos, edit_text);
 			todoAdapter.notifyDataSetInvalidated();
+			// persist the data
 			saveItems();
 		}
 	} 
 
+	/**
+	 * Handles the addition of new todo item
+	 * @param v
+	 */
+	public void onAddNewItem(View v) {
+		String newItem = etNewItem.getText().toString();
+		todoAdapter.add(newItem);
+		etNewItem.setText("");
+		saveItems();
+	}
 
+	// Handle persistence of data
+
+	/**
+	 * Reads todo items from the file and populates the todo list
+	 */
 	private void readItems() {
 		File filesDir = getFilesDir();
-		File todoFile = new File(filesDir, "todo.txt");
+		File todoFile = new File(filesDir, fileName);
 		try {
 			todoItems = new ArrayList<String>(FileUtils.readLines(todoFile));
 		} catch (IOException e) {
@@ -103,24 +138,18 @@ public class TodoActivity extends ActionBarActivity {
 		}
 	}
 
+	/**
+	 * Serializes the todo list into a file 
+	 */
 	private void saveItems() {
 		File filesDir = getFilesDir();
-		File todoFile = new File(filesDir, "todo.txt");
+		File todoFile = new File(filesDir, fileName);
 		try {
 			FileUtils.writeLines(todoFile, todoItems);
 		} catch (IOException e) {
 			todoItems = new ArrayList<String>();
 			e.printStackTrace();
 		}
-	}
-
-
-
-	public void onAddNewItem(View v) {
-		String newItem = etNewItem.getText().toString();
-		todoAdapter.add(newItem);
-		etNewItem.setText("");
-		saveItems();
 	}
 
 	@Override
@@ -142,7 +171,5 @@ public class TodoActivity extends ActionBarActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-
-
 
 }
